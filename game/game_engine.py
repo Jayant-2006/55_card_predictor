@@ -7,6 +7,9 @@ class GameEngine:
         self.width = width
         self.height = height
         self.deck = Deck()
+        self.previous_card = None
+        self.reveal_until = 0
+        self.REVEAL_MS = 1200
 
         self.current_card = self.deck.draw()
         self.next_card = None
@@ -22,9 +25,14 @@ class GameEngine:
         self.font_medium = pygame.font.SysFont(None, 30)
         self.font_small = pygame.font.SysFont(None, 24)
 
+    def is_revealing(self):
+    return pygame.time.get_ticks() < self.reveal_until
+
     def evaluate_guess(self, guess):
         """Draws next card and evaluates prediction."""
-        self.next_card = self.deck.draw()
+        self.previous_card = self.current_card
+        self.current_card = self.next_card
+        self.reveal_until = pygame.time.get_ticks() + self.REVEAL_MS
         
 cur = self.current_card.numeric_rank
 nxt = self.next_card.numeric_rank
@@ -52,11 +60,13 @@ else:
         self.current_card = self.next_card
 
     def handle_event(self, event):
-        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-            if self.btn_higher.collidepoint(event.pos):
-                self.evaluate_guess("HIGHER")
-            elif self.btn_lower.collidepoint(event.pos):
-                self.evaluate_guess("LOWER")
+        if self.is_revealing():
+            return
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                if self.btn_higher.collidepoint(event.pos):
+                    self.evaluate_guess("HIGHER")
+                    elif self.btn_lower.collidepoint(event.pos):
+                        self.evaluate_guess("LOWER")
 
     def update(self):
         pass
@@ -76,7 +86,17 @@ else:
         screen.blit(rem_surf, (self.width - rem_surf.get_width() - 30, 35))
 
         card_w, card_h = 130, 180
-        self.current_card.render(screen, self.width // 2 - card_w // 2, 100, card_w, card_h)
+        card_w, card_h = 130, 180
+        if self.is_revealing() and self.previous_card:
+            gap = 40
+            left_x = self.width // 2 - card_w - gap // 2
+            right_x = self.width // 2 + gap // 2
+            self.previous_card.render(screen, left_x, 100, card_w, card_h)
+            self.current_card.render(screen, right_x, 100, card_w, card_h)
+            vs = self.font_medium.render("→", True, (255, 255, 255))
+            screen.blit(vs, (self.width // 2 - vs.get_width() // 2, 100 + card_h // 2 - vs.get_height() // 2))
+        else:
+            self.current_card.render(screen, self.width // 2 - card_w // 2, 100, card_w, card_h)
 
         status_surf = self.font_small.render(self.status_msg, True, self.status_color)
         screen.blit(status_surf, (self.width // 2 - status_surf.get_width() // 2, 310))
