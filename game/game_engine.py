@@ -33,8 +33,11 @@ if guess == "HIGHER":
     correct = nxt > cur
 else:
     correct = nxt < cur
-        
-if correct:
+
+if nxt == cur:
+    self.status_msg = f"PUSH! {self.next_card.rank_str} vs {self.current_card.rank_str}"
+    self.status_color = (240, 210, 90)
+elif correct:
     self.streak += 1
     multiplier = min(self.streak, 5)          # x1, x2, ... capped at x5
     self.score += multiplier
