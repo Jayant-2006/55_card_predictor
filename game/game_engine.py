@@ -64,6 +64,8 @@ else:
         title_surf = self.font_title.render("High-Low Card Predictor", True, (245, 245, 245))
         screen.blit(title_surf, (self.width // 2 - title_surf.get_width() // 2, 25))
 
+        streak_surf = self.font_small.render(f"Streak: {self.streak}", True, (255, 200, 120))
+        screen.blit(streak_surf, (30, 62))
         score_surf = self.font_medium.render(f"Score: {self.score}", True, (255, 220, 80))
         screen.blit(score_surf, (30, 30))
 
