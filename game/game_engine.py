@@ -26,7 +26,7 @@ class GameEngine:
         self.font_small = pygame.font.SysFont(None, 24)
 
     def is_revealing(self):
-    return pygame.time.get_ticks() < self.reveal_until
+        return pygame.time.get_ticks() < self.reveal_until
 
     def evaluate_guess(self, guess):
         """Draws next card and evaluates prediction."""
