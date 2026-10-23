@@ -1,19 +1,21 @@
 import pygame
 from game.deck import Deck
 
+
 class GameEngine:
     def __init__(self, width, height):
-        self.streak = 0
         self.width = width
         self.height = height
         self.deck = Deck()
+
+        self.current_card = self.deck.draw()
+        self.next_card = None
         self.previous_card = None
         self.reveal_until = 0
         self.REVEAL_MS = 1200
 
-        self.current_card = self.deck.draw()
-        self.next_card = None
         self.score = 0
+        self.streak = 0
         self.status_msg = "Will the next card be HIGHER or LOWER?"
         self.status_color = (220, 220, 220)
 
@@ -30,43 +32,44 @@ class GameEngine:
 
     def evaluate_guess(self, guess):
         """Draws next card and evaluates prediction."""
+        self.next_card = self.deck.draw()
+
+        cur = self.current_card.numeric_rank
+        nxt = self.next_card.numeric_rank
+
+        if nxt == cur:
+            self.status_msg = f"PUSH! {self.next_card.rank_str} vs {self.current_card.rank_str}"
+            self.status_color = (240, 210, 90)
+        elif (guess == "HIGHER" and nxt > cur) or (guess == "LOWER" and nxt < cur):
+            self.streak += 1
+            multiplier = min(self.streak, 5)  # x1 up to x5
+            self.score += multiplier
+            self.status_msg = (
+                f"CORRECT! {self.next_card.rank_str} vs {self.current_card.rank_str}"
+                f"  (+{multiplier}, streak {self.streak})"
+            )
+            self.status_color = (80, 220, 80)
+        else:
+            self.streak = 0
+            self.score = max(0, self.score - 1)
+            self.status_msg = (
+                f"WRONG! {self.next_card.rank_str} vs {self.current_card.rank_str}"
+                "  (streak reset)"
+            )
+            self.status_color = (235, 75, 75)
+
         self.previous_card = self.current_card
         self.current_card = self.next_card
         self.reveal_until = pygame.time.get_ticks() + self.REVEAL_MS
-        
-cur = self.current_card.numeric_rank
-nxt = self.next_card.numeric_rank
-
-if guess == "HIGHER":
-    correct = nxt > cur
-else:
-    correct = nxt < cur
-
-if nxt == cur:
-    self.status_msg = f"PUSH! {self.next_card.rank_str} vs {self.current_card.rank_str}"
-    self.status_color = (240, 210, 90)
-elif correct:
-    self.streak += 1
-    multiplier = min(self.streak, 5)          # x1, x2, ... capped at x5
-    self.score += multiplier
-    self.status_msg = f"CORRECT! {self.next_card.rank_str} vs {self.current_card.rank_str}  (+{multiplier}, streak {self.streak})"
-    self.status_color = (80, 220, 80)
-else:
-    self.streak = 0
-    self.score = max(0, self.score - 1)
-    self.status_msg = f"WRONG! {self.next_card.rank_str} vs {self.current_card.rank_str}  (streak reset)"
-    self.status_color = (235, 75, 75)
-
-        self.current_card = self.next_card
 
     def handle_event(self, event):
         if self.is_revealing():
             return
-            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                if self.btn_higher.collidepoint(event.pos):
-                    self.evaluate_guess("HIGHER")
-                    elif self.btn_lower.collidepoint(event.pos):
-                        self.evaluate_guess("LOWER")
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            if self.btn_higher.collidepoint(event.pos):
+                self.evaluate_guess("HIGHER")
+            elif self.btn_lower.collidepoint(event.pos):
+                self.evaluate_guess("LOWER")
 
     def update(self):
         pass
@@ -77,15 +80,15 @@ else:
         title_surf = self.font_title.render("High-Low Card Predictor", True, (245, 245, 245))
         screen.blit(title_surf, (self.width // 2 - title_surf.get_width() // 2, 25))
 
-        streak_surf = self.font_small.render(f"Streak: {self.streak}", True, (255, 200, 120))
-        screen.blit(streak_surf, (30, 62))
         score_surf = self.font_medium.render(f"Score: {self.score}", True, (255, 220, 80))
         screen.blit(score_surf, (30, 30))
+
+        streak_surf = self.font_small.render(f"Streak: {self.streak}", True, (255, 200, 120))
+        screen.blit(streak_surf, (30, 62))
 
         rem_surf = self.font_small.render(f"Deck: {self.deck.remaining} left", True, (210, 210, 210))
         screen.blit(rem_surf, (self.width - rem_surf.get_width() - 30, 35))
 
-        card_w, card_h = 130, 180
         card_w, card_h = 130, 180
         if self.is_revealing() and self.previous_card:
             gap = 40
@@ -93,8 +96,9 @@ else:
             right_x = self.width // 2 + gap // 2
             self.previous_card.render(screen, left_x, 100, card_w, card_h)
             self.current_card.render(screen, right_x, 100, card_w, card_h)
-            vs = self.font_medium.render("→", True, (255, 255, 255))
-            screen.blit(vs, (self.width // 2 - vs.get_width() // 2, 100 + card_h // 2 - vs.get_height() // 2))
+            arrow = self.font_medium.render(">>", True, (255, 255, 255))
+            screen.blit(arrow, (self.width // 2 - arrow.get_width() // 2,
+                                100 + card_h // 2 - arrow.get_height() // 2))
         else:
             self.current_card.render(screen, self.width // 2 - card_w // 2, 100, card_w, card_h)
 
@@ -106,7 +110,8 @@ else:
         high_surf = self.font_medium.render("HIGHER", True, (255, 255, 255))
         screen.blit(
             high_surf,
-            (self.btn_higher.centerx - high_surf.get_width() // 2, self.btn_higher.centery - high_surf.get_height() // 2),
+            (self.btn_higher.centerx - high_surf.get_width() // 2,
+             self.btn_higher.centery - high_surf.get_height() // 2),
         )
 
         pygame.draw.rect(screen, (170, 50, 50), self.btn_lower, border_radius=8)
@@ -114,5 +119,6 @@ else:
         low_surf = self.font_medium.render("LOWER", True, (255, 255, 255))
         screen.blit(
             low_surf,
-            (self.btn_lower.centerx - low_surf.get_width() // 2, self.btn_lower.centery - low_surf.get_height() // 2),
+            (self.btn_lower.centerx - low_surf.get_width() // 2,
+             self.btn_lower.centery - low_surf.get_height() // 2),
         )
