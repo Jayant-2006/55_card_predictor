@@ -3,6 +3,7 @@ from game.deck import Deck
 
 class GameEngine:
     def __init__(self, width, height):
+        self.streak = 0
         self.width = width
         self.height = height
         self.deck = Deck()
@@ -33,14 +34,17 @@ if guess == "HIGHER":
 else:
     correct = nxt < cur
         
-        if correct:
-            self.score += 1
-            self.status_msg = f"CORRECT! {self.next_card.rank_str} vs {self.current_card.rank_str}"
-            self.status_color = (80, 220, 80)
-        else:
-            self.score = max(0, self.score - 1)
-            self.status_msg = f"WRONG! {self.next_card.rank_str} vs {self.current_card.rank_str}"
-            self.status_color = (235, 75, 75)
+if correct:
+    self.streak += 1
+    multiplier = min(self.streak, 5)          # x1, x2, ... capped at x5
+    self.score += multiplier
+    self.status_msg = f"CORRECT! {self.next_card.rank_str} vs {self.current_card.rank_str}  (+{multiplier}, streak {self.streak})"
+    self.status_color = (80, 220, 80)
+else:
+    self.streak = 0
+    self.score = max(0, self.score - 1)
+    self.status_msg = f"WRONG! {self.next_card.rank_str} vs {self.current_card.rank_str}  (streak reset)"
+    self.status_color = (235, 75, 75)
 
         self.current_card = self.next_card
 
