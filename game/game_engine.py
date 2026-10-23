@@ -25,10 +25,13 @@ class GameEngine:
         """Draws next card and evaluates prediction."""
         self.next_card = self.deck.draw()
         
-        if guess == "HIGHER":
-            correct = self.next_card.rank_str > self.current_card.rank_str
-        else:
-            correct = self.next_card.rank_str < self.current_card.rank_str
+cur = self.current_card.numeric_rank
+nxt = self.next_card.numeric_rank
+
+if guess == "HIGHER":
+    correct = nxt > cur
+else:
+    correct = nxt < cur
         
         if correct:
             self.score += 1
